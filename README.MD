@@ -1,54 +1,88 @@
 # mongoutils
 ### Intro
-A collection of utilities to make and restore backups via mongodump and mongorestore. mongodump and mongorestore must be installed on your system to use this.
+A utilities to make and restore backups via mongodump and mongorestore. mongodump and mongorestore must be installed on your system to use this.
+
+You can assert of mongodump and mongorestore is present on system using the function `checkInstalled` exported by this module.
+
+```typescript
+import { checkInstalled } from 'ale-mongoutils';
+...
+
+const isInstaled: boolean = await checkInstalled();
+
+```
+
 
 ### Including
-```javascript
-const mongoutils = require('@seiren/mongoutils');
+```typescript
+import  { checkInstalled, createDumpCommand, createRestoreCommand, executeCommand } from 'ale-mongoutils';
 ```
 
 ### API
 
-#### parseMongoUrl(url)
-Return the object required for creating dump/restore commands. General mongodb url format accepted (eg: `mongodb://localhost:27017/mydatabase`).
-```javascript
-  const url = "mongodb://localhost/test";
-  let info = mongoutils.parseMongoUrl(url);
-```
-
-#### createDumpCommand(parsedUrl, outDir)
+#### createDumpCommand(options: Credentials): Array<string>
 Generate the mongodump command.
-```javascript
-  let command = mongoutils.createDumpCommand(info, './dump');
+
+```typescript
+export interface Credentials {
+    database: string,
+    dist: string,
+    host: string,
+    username?: string,
+    password?: string,
+    collections?: Array<{ name: string, query?: string }>,
+    authenticationDatabase?: string,
+}
 ```
 
-#### createRestoreCommand(parsedUrl, inDir)
+```javascript
+import  { createDumpCommand } from 'ale-mongoutils';
+
+let commands = createDumpCommand({ database: 'test', host: 'mongodb://localhost:27017', dist: './temp' });
+// [ 'mongodump --db test --host mongodb://localhost:27017 --out ./temp' ] 
+
+```
+This function return a array of commands strings for all item in collections array on options.
+The query key of collections must ve a valid string of mongo find.
+see: https://docs.mongodb.com/manual/reference/program/mongodump/#cmdoption-mongodump-query
+
+#### createRestoreCommand(options: Restore)
 Generate the mongorestore command.
-```javascript
-  let command = mongoutils.createRestoreCommand(info, './dump/test');
+
+```typescript
+export interface Restore {
+    database: string,
+    username?: string,
+    password?: string,
+    from: string,
+    host: string,
+    drop?: boolean,
+    collections?: Array<{ name: string }>,
+    authenticationDatabase?: string,
+}
+```
+```typescript
+import  { createRestoreCommand } from 'ale-mongoutils';
+
+let commands = createRestoreCommand(createRestoreCommand({ database: 'target-database', from: './temp/<from-db>', host: 'mongodb://localhost:27017' }));
+// [ 'mongorestore --db target-database --host mongodb://localhost:27017 --dir ./temp/<from-db>' ]
 ```
 
-#### executeCommand(command)
+This function return a array of commands strings for all item in collections array on options.
+The query key of collections must be a valid string of mongo find.
+see: https://docs.mongodb.com/manual/reference/program/mongorestore/
+
+#### executeCommand(command: string, out: Function, err: Function): Promise<Number>
 Execute a generated command.
-```javascript
-  mongoutils.executeCommand(command, function(out) { console.log("OUT", out); }, function(err) { console.log("ERROR", err); })
-    .then(function(result) {
-      console.log(result);
-    })
-    .catch(function(error) {
-      throw error;
-    })
-```
-The `out` and `err` functions are optional. If you wish to use `err` but not `out`, set `out` to null.
 
-#### checkInstalled()
-Returns true if mongodump/mongorestore if installed on the system. Returns false if not.
 ```javascript
-  mongoutils.checkInstalled()
-    .then(function(result) {
-      console.log(result); //true/false
-    })
-    .catch(function(error) {
-      console.log(error);
-    });
+import  { executeCommand } from 'ale-mongoutils';
+
+executeCommand(commandString, function(out) { console.log("OUT", out); }, function(err) { console.log("ERROR", err); })
+.then(function(result) {
+  console.log(result);
+})
+.catch(function(error) {
+  throw error;
+})
 ```

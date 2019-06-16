@@ -1,17 +1,34 @@
-import {Credentials} from './Credentials.interface';
 
-export function createDumpCommand(options: Credentials): string {
-    let command = `mongodump --db ${options.database} --host ${options.host} --out ${options.dist}`;
-    if (options.username)
-        command += ` --username ${options.username}`;
+import { Credentials } from './Credentials.interface';
+import { createDumpCommand } from './CreateDumpCommand'
 
-    if (options.password)
-        command += ` --password ${options.password}`;
+describe('CreateDumpCommand', () => {
 
-    if (options.authenticationDatabase)
-        command += ` --authenticationDatabase ${options.authenticationDatabase}`;
+    let auth: Credentials;
 
+    beforeEach(() => {
+        auth = { database: 'test', host: 'mongodb://localhost:27017', dist: './temp' }
+    });
 
+    it('Dump all db collections', () => {
+        const [command] = createDumpCommand(auth);
 
-    return command;
-}
+        expect(command).toContain('--db test');
+        expect(command).toContain('--out ./temp');
+        expect(command).toContain('--host mongodb://localhost:27017');
+    });
+
+    it('Generate commands to collections', () => {
+
+        const collections: Array<{ name: string, query?: string }>= [
+            { name: 'c-1' },
+            { name: 'c-2', query: '{foo: \'bar\'}' }
+        ];
+
+        const [c1, c2] = createDumpCommand({ ...auth, collections });
+
+        expect(c1).toContain(`--collection ${collections[0].name}`);
+        expect(c2).toContain(`--collection ${collections[1].name} -q '${collections[1].query}'`);
+    })
+
+});

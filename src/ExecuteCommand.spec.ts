@@ -1,11 +1,13 @@
-import { exec } from 'child_process';
+import { executeCommand } from './ExecuteCommand'
 
-export function executeCommand(command: string, out?: (...args: any[]) => void, err?: (...args: any[]) => void) {
-    return new Promise((resolve: (...args: any[]) => void, reject: (...args: any[]) => void) => {
-        let spawn = exec(command);
-        if (spawn && spawn.stdout && out) spawn.stdout.on('data', out || resolve);
-        if (spawn && spawn.stderr && err) spawn.stderr.on('data', err || reject);
+describe('ExecuteCommand', () => {
 
-        spawn.on('close', resolve);
+    it('pwd', async (cb) => {
+        const stdout = await executeCommand('pwd', (out) => {
+            expect(__dirname).toContain(out.trim());
+            cb();
+        }, (e) => cb(e));
+
+        expect(stdout).toBe(0);
     });
-}
+});

@@ -1,10 +1,11 @@
 
-export interface Credentials {
+export interface Restore {
     database: string,
-    dist: string,
-    host?: string,
     username?: string,
     password?: string,
-    collections?: Array<{ name: string, query?: string }>,
+    from: string,
+    host: string,
+    drop?: boolean,
+    collections?: Array<{ name: string }>,
     authenticationDatabase?: string,
 }
